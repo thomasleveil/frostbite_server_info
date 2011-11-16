@@ -4,7 +4,7 @@ import py2exe
 
 setup(
     name='frostbite_server_info',
-    version='1.0',
+    version='1.1',
     description="query a frostbite game server for basic info",
     console=['frostbite_server_info.py'],
     zipfile=None,
