@@ -14,42 +14,17 @@ if __name__ == '__main__':
         Optionally can verify RCON password correctness.
         '''),
         epilog=textwrap.dedent('''\
-        Examples
-        --------
-
-        $ frostbite_server_info.py 11.22.33.44 47000 --password=xxxxxxx --timeout=3
-        {
-            "password_accepted": true,
-            "game": "BF3",
-            "version": "883971",
-            "serverInfo": {
-                "targetScore": "100",
-                "roundTime": "613627",
-                "team4score": null,
-                "level": "MP_003",
-                "team2score": "0",
-                "serverName": "Test server #1",
-                "gamemode": "TeamDeathMatch0",
-                "numPlayers": "0",
-                "maxPlayers": "16",
-                "serverUptime": "789299",
-                "roundsTotal": "1",
-                "hasPunkbuster": "true",
-                "numTeams": "2",
-                "hasPassword": "false",
-                "team1score": "0",
-                "team3score": null,
-                "onlineState": "",
-                "roundsPlayed": "0",
-                "isRanked": "true"
-            }
-        }
+        examples:
+          frostbite_server_info.py 11.22.33.44 47000 --password=xxxxxxx --timeout=3
+          frostbite_server_info.py 11.22.33.44 47000
+          frostbite_server_info.py 11.22.33.44 47000 --format=xml
         ''')
     )
     parser.add_argument('host', metavar='HOST', type=str, help='RCON IP address or hostname')
     parser.add_argument('port', metavar='PORT', type=int, help='RCON port')
     parser.add_argument('--password', '-p', metavar='PASSWORD', type=str,
                         help='RCON password if you want to check password correctness')
+    parser.add_argument('--format', metavar='FORMAT', type=str, choices=('json', 'xml', 'ini'), default='json', help='output format (json, xml, ini)')
     parser.add_argument('--timeout', metavar='SECONDS', type=int, help='connection timeout')
     parser.add_argument('--debug', action='store_true', help='activate debug output')
 
@@ -61,12 +36,32 @@ if __name__ == '__main__':
         logging.getLogger().setLevel(logging.NOTSET)
 
     try:
-        data = json.dumps(getinfo(args.host, args.port, password=args.password, timeout=args.timeout), indent=4)
-        print data
+        data = getinfo(args.host, args.port, password=args.password, timeout=args.timeout)
+        if args.format == 'json':
+            print json.dumps(data, indent=4)
+        elif args.format == 'xml':
+            from frostbite_server_info.structured import dict2xml
+            print dict2xml(data, pretty=True)
+        elif args.format == 'ini':
+            import ConfigParser, collections
+            conf = ConfigParser.RawConfigParser()
+            conf.add_section("general")
+            for s in data:
+                if hasattr(data[s], 'items'):
+                    conf.add_section(s)
+                    for k, v in data[s].items():
+                        conf.set(s, k, v)
+                else:
+                    conf.set("general", s, data[s])
+            from sys import stdout
+            conf.write(stdout)
+        else:
+            raise ValueError("unsupported output format : %s" % args.format)
+
         if 'error' in data:
             sys.exit(1)
         else:
             sys.exit(0)
-    except Exception, err:
+    except KeyboardInterrupt:
         sys.exit(1)
 
