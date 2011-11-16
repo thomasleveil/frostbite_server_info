@@ -61,7 +61,8 @@ activate debug output
 ```
 
 `$ frostbite_server_info.py 11.22.33.44 47200 --password=xxxxxxx --timeout=3 --format=ini`
-```
+
+```ini
 [general]
 password_accepted = True
 game = BF3
